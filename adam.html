@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inscription & Connexion - Thème Noël</title>
+  <style>
+    :root{
+      --bg-gradient: linear-gradient(135deg,#fdf6f0,#dff6ff);
+      --card-bg: rgba(255,255,255,0.85);
+      --accent-red: #d62828;
+      --accent-green: #2d6a4f;
+      --accent-gold: #f4c430;
+    }
+
+    *{box-sizing:border-box;font-family:'Segoe UI',Roboto,Arial,sans-serif;}
+
+    body{
+      margin:0;
+      min-height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:flex-start;
+      background:var(--bg-gradient);
+      overflow:auto;
+      padding:20px 0;
+      position:relative;
+    }
+
+    body::before{
+      content:"";
+      position:absolute;
+      top:0;left:0;width:100%;height:100%;
+      background-image: url('https://png.pngtree.com/png-vector/20231123/ourmid/pngtree-christmas-decoration-snowflakes-png-image_10576150.png');
+      background-repeat:repeat;
+      background-size:150px;
+      opacity:0.2;
+      z-index:0;
+    }
+
+    .card{
+      position:relative;
+      z-index:1;
+      width:360px;
+      padding:30px 25px;
+      border-radius:20px;
+      background:var(--card-bg);
+      backdrop-filter:blur(12px);
+      box-shadow:0 8px 30px rgba(0,0,0,0.2);
+      border:2px solid rgba(255,255,255,0.3);
+    }
+
+    h1{margin:0 0 15px;font-size:20px;text-align:center;color:var(--accent-red);}
+
+    label{display:block;font-size:13px;margin-top:10px;color:#333;}
+
+    input{
+      width:100%;
+      padding:10px;
+      margin-top:6px;
+      border-radius:10px;
+      border:1px solid #ccc;
+      outline:none;
+      transition:0.2s;
+    }
+
+    input:focus{
+      border-color:var(--accent-green);
+      box-shadow:0 0 6px rgba(45,106,79,0.3);
+    }
+
+    button{
+      margin-top:15px;
+      width:100%;
+      padding:12px 0;
+      border-radius:12px;
+      border:0;
+      background:var(--accent-red);
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+      font-size:15px;
+      box-shadow:0 5px 15px rgba(0,0,0,0.2);
+      transition:transform .2s ease, box-shadow .2s ease, background .2s ease;
+    }
+
+    button:hover{
+      transform:scale(1.08);
+      box-shadow:0 8px 20px rgba(0,0,0,0.3);
+      background:var(--accent-green);
+    }
+
+    .muted{color:#555;font-size:13px;margin-top:8px;text-align:center;}
+    .small{font-size:12px;}
+
+    .accounts-list{margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,255,255,0.6);border:1px solid rgba(0,0,0,0.05);}
+    .account-item{padding:10px;border-radius:8px;background:#fff;border:1px solid #eee;margin-bottom:8px;}
+
+    .nav{
+      display:flex;
+      gap:8px;
+      margin-bottom:15px;
+    }
+
+    .nav button{
+      flex:1;
+      background:rgba(255,255,255,0.7);
+      color:#111;
+      border:2px solid rgba(255,255,255,0.5);
+      font-weight:600;
+      transition:0.2s;
+    }
+
+    .nav button.active{
+      background:var(--accent-red);
+      color:#fff;
+      border-color:var(--accent-green);
+    }
+
+    .hidden{display:none;}
+  </style>
+</head>
+<body>
+
+  <div class="card" id="app">
+    <div class="nav">
+      <button id="tab-register">S'enregistrer</button>
+      <button id="tab-login">Se connecter</button>
+    </div>
+
+    <div id="view-register">
+      <h1>Créer un compte</h1>
+      <label for="reg-email">Email</label>
+      <input id="reg-email" type="email" placeholder="exemple@gmail.com" />
+      <label for="reg-password">Mot de passe</label>
+      <input id="reg-password" type="password" placeholder="8+ caractères" />
+      <label for="reg-password2">Confirmer le mot de passe</label>
+      <input id="reg-password2" type="password" placeholder="confirmer le mot de passe" />
+      <button id="register-btn">Enregistrer le compte</button>
+      <p class="muted small">Les comptes sont enregistrés dans <strong>localStorage</strong> du navigateur (exemple).</p>
+    </div>
+
+    <div id="view-login" class="hidden">
+      <h1>Connexion</h1>
+      <label for="login-email">Email</label>
+      <input id="login-email" type="email" placeholder="exemple@gmail.com" />
+      <label for="login-password">Mot de passe</label>
+      <input id="login-password" type="password" placeholder="mot de passe" />
+      <button id="login-btn">Se connecter</button>
+      <p class="muted small">Si connexion réussie, vous serez amené au tableau de bord.</p>
+    </div>
+
+    <div id="view-dashboard" class="hidden">
+      <h1>Tableau de bord</h1>
+      <p class="muted">Voici les comptes enregistrés :</p>
+      <div id="accounts" class="accounts-list"></div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="logout-btn">Retour / Déconnexion</button>
+        <button id="clear-btn" style="background:#e11d48">Supprimer tous les comptes</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+const storageKey = 'demo_accounts_v1';
+const el = id=>document.getElementById(id);
+
+function loadAccounts(){try{return JSON.parse(localStorage.getItem(storageKey)||'[]');}catch(e){return[];}}
+function saveAccounts(list){localStorage.setItem(storageKey,JSON.stringify(list));}
+
+async function hashPassword(password){
+  if(!window.crypto||!crypto.subtle) return btoa(password);
+  const enc=new TextEncoder(); const data=enc.encode(password);
+  const digest=await crypto.subtle.digest('SHA-256',data);
+  return Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+const viewRegister=el('view-register');
+const viewLogin=el('view-login');
+const viewDashboard=el('view-dashboard');
+const tabReg=el('tab-register');
+const tabLogin=el('tab-login');
+
+function showView(name){
+  viewRegister.classList.add('hidden');
+  viewLogin.classList.add('hidden');
+  viewDashboard.classList.add('hidden');
+
+  if(name==='register'){
+    viewRegister.classList.remove('hidden');
+    tabReg.style.display='none';
+    tabLogin.style.display='inline-block';
+  } else if(name==='login'){
+    viewLogin.classList.remove('hidden');
+    tabLogin.style.display='none';
+    tabReg.style.display='inline-block';
+  } else if(name==='dashboard'){
+    viewDashboard.classList.remove('hidden');
+    tabReg.style.display='none';
+    tabLogin.style.display='none';
+  }
+}
+
+// Inscription
+el('register-btn').addEventListener('click',async ()=>{
+  const email=el('reg-email').value.trim().toLowerCase();
+  const p1=el('reg-password').value;
+  const p2=el('reg-password2').value;
+  if(!email||!p1){alert('Veuillez remplir email et mot de passe.'); return;}
+  if(p1.length<6){alert('Le mot de passe doit contenir au moins 6 caractères.'); return;}
+  if(p1!==p2){alert('Les mots de passe ne correspondent pas.'); return;}
+  const accounts=loadAccounts();
+  if(accounts.find(a=>a.email===email)){alert('Un compte avec cet email existe déjà.'); return;}
+  const hashed=await hashPassword(p1);
+  accounts.push({email,passwordHash:hashed,createdAt:new Date().toISOString()});
+  saveAccounts(accounts);
+  alert('Compte enregistré. Redirection vers le tableau de bord.');
+  openDashboard();
+});
+
+// Connexion
+el('login-btn').addEventListener('click',async ()=>{
+  const email=el('login-email').value.trim().toLowerCase();
+  const password=el('login-password').value;
+  if(!email||!password){alert('Remplissez email et mot de passe'); return;}
+  const accounts=loadAccounts();
+  const hashed=await hashPassword(password);
+  const acct=accounts.find(a=>a.email===email&&a.passwordHash===hashed);
+  if(!acct){alert('Email ou mot de passe incorrect.'); return;}
+  alert('Connexion réussie.');
+  openDashboard();
+});
+
+function openDashboard(){showView('dashboard'); renderAccounts(); }
+function renderAccounts(){
+  const container=el('accounts');
+  const accounts=loadAccounts();
+  container.innerHTML='';
+  if(accounts.length===0){container.innerHTML='<div class="small muted">Aucun compte enregistré.</div>'; return;}
+  accounts.forEach(a=>{
+    const div=document.createElement('div');
+    div.className='account-item';
+    div.innerHTML=`<strong>${a.email}</strong><div class="small">Créé: ${new Date(a.createdAt).toLocaleString()}</div>`;
+    container.appendChild(div);
+  });
+}
+
+el('logout-btn').addEventListener('click',()=>{showView('login');});
+el('clear-btn').addEventListener('click',()=>{if(confirm('Supprimer tous les comptes enregistrés ?')){localStorage.removeItem(storageKey);renderAccounts();alert('Comptes supprimés.');}});
+
+tabReg.addEventListener('click',()=>showView('register'));
+tabLogin.addEventListener('click',()=>showView('login'));
+
+// Initial
+showView('register');
+</script>
+</body>
+</html>
